@@ -240,7 +240,7 @@ functs.getUniqueExtension = function(url) {
 }
 
 //Format date
-functs.dateToYMD = function(date) {
+functs.dateToYMDhms = function(date) {
     var d = date.getDate();
     var m = date.getMonth() + 1;
     var y = date.getFullYear();
@@ -249,6 +249,22 @@ functs.dateToYMD = function(date) {
     var ss = date.getSeconds();
     var retVal = '' + y + '-' + (m<=9 ? '0' + m : m) + '-' + (d <= 9 ? '0' + d : d);
     retVal += ' ' + (hh<=9 ? '0' + hh : hh) + ":" + (mm<=9 ? '0' + mm : mm) + ":" + (ss<=9 ? '0' + ss : ss);
+    return retVal;
+}
+
+functs.dateToYMD = function(date) {
+    var d = date.getDate();
+    var m = date.getMonth() + 1;
+    var y = date.getFullYear();
+    var retVal = '' + y + '-' + (m<=9 ? '0' + m : m) + '-' + (d <= 9 ? '0' + d : d);
+    return retVal;
+}
+
+functs.dateToHMS = function(date) {
+    var hh = date.getHours();
+    var mm = date.getMinutes();
+    var ss = date.getSeconds();
+    var retVal = ' ' + (hh<=9 ? '0' + hh : hh) + ":" + (mm<=9 ? '0' + mm : mm) + ":" + (ss<=9 ? '0' + ss : ss);
     return retVal;
 }
 

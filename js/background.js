@@ -29,32 +29,45 @@
 */
 
 var backgroundPage = {};
+var openTabs = {};
+
+backgroundPage._timedBookMark = function(tabid, changeinfo, tab) {
+	openTabs[tab.id] = new Date ();
+	setTimeout (function () {
+		backgroundPage._OnUpdated(tabid, changeinfo, tab);
+	}, 300000);
+}
 
 //Event fired with each new page visit
 backgroundPage._OnUpdated = function(tabid, changeinfo, tab) {
-  var url = tab.url;
-  //Check for completed requests
-  if (url !== undefined && changeinfo.status == "complete" && url.substring(0, 6) != "chrome") {
-    //Chech the domain / page
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", tab.url, true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            if(xhr.status == 0) {
-              console.log("wrong domain:", tab.url);
-            } else if(xhr.status == 404) {
-              console.log("404 page:", tab.url);
-            } else if(xhr.status == 200) {
-              //Restore storage options
-              abm._Restore(function() {
-                //console.log('Check:'+url+' title:'+tab.title+' id:'+tab.id);
-                backgroundPage._CheckItem(url,tab.title,tab.id);
-              });
-            }
-        }
-    }
-    xhr.send(null);
-  }
+    //check our timed out tab is still active if so we can bookmark it 
+	chrome.tabs.get(tab.id, function(tab2) {
+		if (tab.url === tab2.url) {
+			var url = tab.url;
+			//Check for completed requests
+			if (url !== undefined && changeinfo.status == "complete" && url.substring(0, 6) != "chrome") {
+				//Chech the domain / page
+				var xhr = new XMLHttpRequest();
+				xhr.open("GET", tab.url, true);
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState == 4) {
+						if(xhr.status == 0) {
+						console.log("wrong domain:", tab.url);
+						} else if(xhr.status == 404) {
+						console.log("404 page:", tab.url);
+						} else if(xhr.status == 200) {
+						//Restore storage options
+						abm._Restore(function() {
+							console.log('Check:'+url+' title:'+tab.title+' id:'+tab.id);
+							backgroundPage._CheckItem(url,tab.title,tab.id);
+						});
+						}
+					}
+				}
+				xhr.send(null);
+			}
+		}
+	});
 }
 
 backgroundPage._OnDownload = function(item) {
@@ -111,6 +124,7 @@ backgroundPage._CheckItem = function(url,title,tabId) {
 
     var domain = functs.getUniqueId(url);
     var extension = functs.getUniqueExtension(url);
+    var found = false;
     backgroundPage._AutoAdd(domain, extension);
 
     abm._Restore(function() {
@@ -125,23 +139,29 @@ backgroundPage._CheckItem = function(url,title,tabId) {
         var folderName = defaults.bookmarkFolderName;
         for(var i=0; i<abm.domains.length; i++) {
             //Find in url
+            console.log(domain + '===' + abm.domains[i])
             if(domain === abm.domains[i]) {
-                backgroundPage._GetTitle(tabId, abm.options[i], title, function(title2, folder) {
-                    if(title2 != "") {
-                        title = title2;
-                    }
-                    folderName = defaults.bookmarkFolderName;
-                    if(folder != null && typeof folder !== "undefined") {
-                        folderName = folder[0];
-                    }
-
-                    abm._CreateFolder(1, abm.bookmarkFolderName, true, function(idFolder1) {
-                        idParentFolder = idFolder1;
-                        backgroundPage._createBookmark(url, functs.getUniqueId(url), folderName, title);
-                    });
-                });
+                found = true;
+				console.log(domain + ' matched - ignoring')
                 break;
             }
+         }
+
+        if (!found) {
+            backgroundPage._GetTitle(tabId, abm.options[i], title, function(title2, folder) {
+                if(title2 != "") {
+                    title = title2;
+                }
+                folderName = defaults.bookmarkFolderName;
+                if(folder != null && typeof folder !== "undefined") {
+                    folderName = folder[0];
+                }
+
+                abm._CreateFolder(1, abm.bookmarkFolderName, true, function(idFolder1) {
+                    idParentFolder = idFolder1;
+                    backgroundPage._createBookmark(url, functs.getUniqueId(url), folderName, title);
+                });
+            });
         }
 
         //Get extensions
@@ -229,6 +249,8 @@ backgroundPage._createBookmark = function(url, search, folder, title) {
   chrome.bookmarks.getSubTree(idParentFolder, function(bookmarks) {
     //Search url in bookmarks
     idFolder = functs.search_for_title(bookmarks, url);
+	folder = functs.dateToYMD(d);
+
     if(idFolder <= 0) {
       //The bookmark does not exist
       abm._CreateFolder(idParentFolder, folder, true, function(idFolder2, title2) {
@@ -236,14 +258,14 @@ backgroundPage._createBookmark = function(url, search, folder, title) {
         idParentId = idFolder2;
         if(idParentId) {
           if(abm.dateEnabled)
-            entryDate = '['+functs.dateToYMD(d)+'] - ';
+            entryDate = '['+functs.dateToHMS(d)+'] - ';
           //Create bookmark
           chrome.bookmarks.create({
             'parentId': idParentId,
             'title': entryDate + title,
             'url': url
           });
-          //console.log('Bookmark ' + url + ' created in ' + abm.bookmarkFolderName + ' > ' + folder);
+          console.log('Bookmark ' + url + ' created in ' + abm.bookmarkFolderName + ' > ' + folder);
           backgroundPage._Notify(translate('notify_title'), translate('notify_newbookmark', [title]) + " " + abm.bookmarkFolderName + " > " + folder + "\"\n\n(" + url + ")");
         }/* else {
           console.log('Error, folder does not exists.')
@@ -257,10 +279,17 @@ backgroundPage._createBookmark = function(url, search, folder, title) {
 }
 
 //Add listeners
-chrome.tabs.onUpdated.addListener(backgroundPage._OnUpdated);
+//chrome.tabs.onUpdated.addListener(backgroundPage._OnUpdated);
+chrome.tabs.onUpdated.addListener(backgroundPage._timedBookMark);
 chrome.downloads.onDeterminingFilename.addListener(backgroundPage._OnDownload);
 chrome.runtime.onInstalled.addListener(function (object) {
     chrome.tabs.create({url: chrome.extension.getURL("options.html")});
+});
+
+chrome.tabs.onRemoved.addListener(function(tabid, removeinfo) {
+    if (openTabs[tabid]) {
+        delete openTabs[tabid]
+    }
 });
 //Get messages
 chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {

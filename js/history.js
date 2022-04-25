@@ -190,7 +190,7 @@ historyPage._ExecDownDom = function(bookmarks,create,search,idFolderId,callback)
         var item = historyPage.allItems[k];
         if(abm.dateEnabled) {
 	        d = new Date(item.startTime);
-	        entryDate = '['+functs.dateToYMD(d)+'] - ';
+	        entryDate = '['+functs.dateToYMDhms(d)+'] - ';
         }
         idFolder = functs.search_for_title(bookmarks, item.url);
         if(idFolder <= 0) {
@@ -233,7 +233,7 @@ historyPage._ExecHisDom = function(bookmarks,create,search,idFolderId,callback) 
         if(abm.dateEnabled) {
 	        d = new Date(0);
 	        d.setMilliseconds(historyPage.allItems[i].lastVisitTime);
-	        entryDate = '['+functs.dateToYMD(d)+'] - ';
+	        entryDate = '['+functs.dateToYMDhms(d)+'] - ';
         }
         idFolder = functs.search_for_title(bookmarks, historyPage.allItems[i].url);
         if(idFolder <= 0) {
@@ -302,7 +302,7 @@ historyPage._ExecDownExt = function(bookmarks,create,search,idFolderId,callback)
         var item = historyPage.allItems[i];
         if(abm.dateEnabled) {
 	        d = new Date(item.startTime);
-	        entryDate = '['+functs.dateToYMD(d)+'] - ';
+	        entryDate = '['+functs.dateToYMDhms(d)+'] - ';
         }
         idFolder = functs.search_for_title(bookmarks, item.url);
         if(idFolder <= 0) {
@@ -345,7 +345,7 @@ historyPage._ExecHisExt = function(bookmarks,create,search,idFolderId,callback) 
       	if(abm.dateEnabled) {
 	        d = new Date(0);
 	        d.setMilliseconds(historyPage.allItems[i].lastVisitTime);
-	        entryDate = '['+functs.dateToYMD(d)+'] - ';
+	        entryDate = '['+functs.dateToYMDhms(d)+'] - ';
         }
         idFolder = functs.search_for_title(bookmarks, historyPage.allItems[i].url);
         if(idFolder <= 0) {
