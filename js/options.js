@@ -98,7 +98,7 @@ optionsPage.settingsTab = function() {
             abm._Restore();
         });
     });
-
+    
     //Notifications enabled
     var displayDivNotTimeOut = function(state) {
         if(state) {
@@ -126,6 +126,16 @@ optionsPage.settingsTab = function() {
         $(this).val(notTimOut);
         chrome.storage.sync.set({
             notificationTimeout: notTimOut
+        }, function() {
+            abm._Restore();
+        });
+    });
+    
+    $('#idTabAge').val(abm.tabAge).change(function() {
+        var noTabAge = parseInt($(this).val(), 10);
+        $(this).val(noTabAge);
+        chrome.storage.sync.set({
+            tabAge: noTabAge
         }, function() {
             abm._Restore();
         });
@@ -612,6 +622,7 @@ optionsPage._Save = function() {
             notificationTimeout: $('#idNotificationsTimeout').val(),
             dateEnabled: $('input[name="dateEnabled"]:checked').val() !== "1" ? false : true,
             autoAdd: $('input[name="autoAdd"]:checked').val() !== "1" ? false : true,
+            tabAge: $('#idTabAge').val(),
         }, function() {
             optionsPage._ShowStatusMessage('Options saved');
             //RESTORE DATA

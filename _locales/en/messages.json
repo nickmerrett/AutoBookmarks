@@ -397,5 +397,13 @@
   "miliseconds": {
     "message": "Miliseconds",
     "description": "Miliseconds"
+  },
+  "seconds": {
+    "message": "Seconds",
+    "description": "Seconds"
+  },
+  "tab_age": {
+    "message": "Tab Age",
+    "description": "How long a tab should be left untouched before it is bookmarked"
   }
 }

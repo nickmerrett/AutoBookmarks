@@ -32,42 +32,45 @@ var backgroundPage = {};
 var openTabs = {};
 
 backgroundPage._timedBookMark = function(tabid, changeinfo, tab) {
-	openTabs[tab.id] = new Date ();
-	setTimeout (function () {
-		backgroundPage._OnUpdated(tabid, changeinfo, tab);
-	}, 300000);
+    abm._Restore(function() {
+        openTabs[tab.id] = new Date ();
+        console.log('Url:'+tab.url+' title:'+tab.title+' id:'+tab.id + ' re-checking in:'+ abm.tabAge+'s');
+        setTimeout (function () {
+            backgroundPage._OnUpdated(tabid, changeinfo, tab);
+        }, (abm.tabAge*1000));
+    });
 }
 
 //Event fired with each new page visit
 backgroundPage._OnUpdated = function(tabid, changeinfo, tab) {
     //check our timed out tab is still active if so we can bookmark it 
-	chrome.tabs.get(tab.id, function(tab2) {
-		if (tab.url === tab2.url) {
-			var url = tab.url;
-			//Check for completed requests
-			if (url !== undefined && changeinfo.status == "complete" && url.substring(0, 6) != "chrome") {
-				//Chech the domain / page
-				var xhr = new XMLHttpRequest();
-				xhr.open("GET", tab.url, true);
-				xhr.onreadystatechange = function() {
-					if (xhr.readyState == 4) {
-						if(xhr.status == 0) {
-						console.log("wrong domain:", tab.url);
-						} else if(xhr.status == 404) {
-						console.log("404 page:", tab.url);
-						} else if(xhr.status == 200) {
-						//Restore storage options
-						abm._Restore(function() {
-							console.log('Check:'+url+' title:'+tab.title+' id:'+tab.id);
-							backgroundPage._CheckItem(url,tab.title,tab.id);
-						});
-						}
-					}
-				}
-				xhr.send(null);
-			}
-		}
-	});
+    chrome.tabs.get(tab.id, function(tab2) {
+        if (tab.url === tab2.url) {
+            var url = tab.url;
+            //Check for completed requests
+            if (url !== undefined && changeinfo.status == "complete" && url.substring(0, 6) != "chrome") {
+                //Chech the domain / page
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", tab.url, true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == 4) {
+                        if(xhr.status == 0) {
+                        console.log("wrong domain:", tab.url);
+                        } else if(xhr.status == 404) {
+                        console.log("404 page:", tab.url);
+                        } else if(xhr.status == 200) {
+                        //Restore storage options
+                        abm._Restore(function() {
+                            console.log('Check:'+url+' title:'+tab.title+' id:'+tab.id);
+                            backgroundPage._CheckItem(url,tab.title,tab.id);
+                        });
+                        }
+                    }
+                }
+                xhr.send(null);
+            }
+        }
+    });
 }
 
 backgroundPage._OnDownload = function(item) {
@@ -125,6 +128,7 @@ backgroundPage._CheckItem = function(url,title,tabId) {
     var domain = functs.getUniqueId(url);
     var extension = functs.getUniqueExtension(url);
     var found = false;
+    var extfound = false;
     backgroundPage._AutoAdd(domain, extension);
 
     abm._Restore(function() {
@@ -139,15 +143,22 @@ backgroundPage._CheckItem = function(url,title,tabId) {
         var folderName = defaults.bookmarkFolderName;
         for(var i=0; i<abm.domains.length; i++) {
             //Find in url
-            console.log(domain + '===' + abm.domains[i])
-            if(domain === abm.domains[i]) {
+           // console.log(domain + '===' + abm.domains[i])
+            if(domain.includes(abm.domains[i])) {
                 found = true;
 				console.log(domain + ' matched - ignoring')
                 break;
             }
-         }
+        }
+        //Get extensions
+        for(var i=0; i<abm.extensions.length; i++) {
+            if(extension === abm.extensions[i]) {
+                extfound = true;
+                break;
+            }
+        }
 
-        if (!found) {
+        if (!found && !extfound) {
             backgroundPage._GetTitle(tabId, abm.options[i], title, function(title2, folder) {
                 if(title2 != "") {
                     title = title2;
@@ -164,16 +175,6 @@ backgroundPage._CheckItem = function(url,title,tabId) {
             });
         }
 
-        //Get extensions
-        for(var i=0; i<abm.extensions.length; i++) {
-            if(extension === abm.extensions[i]) {
-                abm._CreateFolder(1, abm.bookmarkFolderName, true, function(idFolder1) {
-                    idParentFolder = idFolder1;
-                    backgroundPage._createBookmark(url, abm.extensions[i], abm.extensions[i], title);
-                });
-                break;
-            }
-        }
     });
 };
 

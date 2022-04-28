@@ -32,19 +32,20 @@
 var idParentFolder = 0;
 var defaults = {
   state : true,
-  domains : [ "autobookmarks.txusko.com" ],
-  options : [[ "autobookmarks.txusko.com", "0", ""]],
+  domains : [ "google.com" ],
+  options : [[ "google.com", "0", ""]],
   extensions : [],
   bookmarkFolderName : "AutoBookmarks",
   notificationsEnabled : true,
   notificationTimeout : 2500,
   dateEnabled : true,
+  tabAge: 300,
   autoAdd : false
 }
 
 //Extension vars
 var abm = {
-  extUrl : "http://autobookmarks.txusko.com/ws/index.php",
+  extUrl : "google.com",
   state : defaults.state,
   domains : defaults.domains,
   options : defaults.options,
@@ -53,6 +54,7 @@ var abm = {
   notificationsEnabled : defaults.notificationsEnabled,
   notificationTimeout : defaults.notificationTimeout,
   dateEnabled : defaults.dateEnabled,
+  tabAge: defaults.tabAge,
   autoAdd : defaults.autoAdd
 }
 
@@ -69,6 +71,7 @@ abm._Restore = function(callback) {
     abm.notificationTimeout = retVal.notificationTimeout;
     abm.dateEnabled = retVal.dateEnabled;
     abm.autoAdd = retVal.autoAdd;
+    abm.tabAge = retVal.tabAge;
     //Localize
     localizePage();
     //Check id of the root folder
