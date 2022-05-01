@@ -31,19 +31,55 @@
 var backgroundPage = {};
 var openTabs = {};
 
-backgroundPage._timedBookMark = function(tabid, changeinfo, tab) {
-    abm._Restore(function() {
-        openTabs[tab.id] = new Date ();
-        console.log('Url:'+tab.url+' title:'+tab.title+' id:'+tab.id + ' re-checking in:'+ abm.tabAge+'s');
-        setTimeout (function () {
-            backgroundPage._OnUpdated(tabid, changeinfo, tab);
-        }, (abm.tabAge*1000));
-    });
-}
-
 //Event fired with each new page visit
 backgroundPage._OnUpdated = function(tabid, changeinfo, tab) {
-    //check our timed out tab is still active if so we can bookmark it 
+    var url = tab.url;
+    var domain = functs.getUniqueId(url);
+    var extension = functs.getUniqueExtension(url);
+    var found = false;
+    var extfound = false;
+
+    if (url !== undefined && changeinfo.status == "complete" && url.substring(0, 6) != "chrome") {
+        abm._Restore(function() {
+            openTabs[tab.id] = new Date ();
+            //Check configuration
+            if(abm.domains.length <= 0 && abm.extensions.length <= 0) {
+                console.log('Autobookmarks: No filters!');
+                return;
+            }
+
+            //Get domains
+            var folderName = defaults.bookmarkFolderName;
+            for(var i=0; i<abm.domains.length; i++) {
+                //Find in url
+            // console.log(domain + '===' + abm.domains[i])
+                if(domain.includes(abm.domains[i])) {
+                    found = true;
+                    console.log(domain + ' matched - ignoring')
+                    break;
+                }
+            }
+            //Get extensions
+            for(var i=0; i<abm.extensions.length; i++) {
+                if(extension === abm.extensions[i]) {
+                    extfound = true;
+                    break;
+                }
+            }
+
+            //we act on if the domain or extension is not found, they are blacklists
+            if (!found && !extfound) {
+                console.log('checked - url:'+tab.url+' title:'+tab.title+' id:'+tab.id + ' re-checking in:'+ abm.tabAge+'s');
+                setTimeout (function () {
+                    backgroundPage._timedBookMark(tabid, changeinfo, tab);
+                }, (abm.tabAge*1000));
+            }
+        });
+    }
+}
+
+backgroundPage._timedBookMark = function(tabid, changeinfo, tab) {
+    //check our tab is still active and on the same page if so we can bookmark it 
     chrome.tabs.get(tab.id, function(tab2) {
         if (tab.url === tab2.url) {
             var url = tab.url;
@@ -157,7 +193,7 @@ backgroundPage._CheckItem = function(url,title,tabId) {
                 break;
             }
         }
-
+        //we act on if the domain or extension is not found, they are blacklists
         if (!found && !extfound) {
             backgroundPage._GetTitle(tabId, abm.options[i], title, function(title2, folder) {
                 if(title2 != "") {
@@ -281,7 +317,7 @@ backgroundPage._createBookmark = function(url, search, folder, title) {
 
 //Add listeners
 //chrome.tabs.onUpdated.addListener(backgroundPage._OnUpdated);
-chrome.tabs.onUpdated.addListener(backgroundPage._timedBookMark);
+chrome.tabs.onUpdated.addListener(backgroundPage._OnUpdated);
 chrome.downloads.onDeterminingFilename.addListener(backgroundPage._OnDownload);
 chrome.runtime.onInstalled.addListener(function (object) {
     chrome.tabs.create({url: chrome.extension.getURL("options.html")});
